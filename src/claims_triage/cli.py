@@ -17,6 +17,8 @@ import os  # noqa: F401
 import sys  # noqa: F401
 
 from pydantic import ValidationError  # noqa: F401
+from pathlib import Path
+import pandas as pd
 
 from claims_triage.contracts import ClaimRequest  # noqa: F401
 from claims_triage.inference import load_model, predict  # noqa: F401
@@ -29,13 +31,24 @@ def read_claims(path):
     """EJERCICIO 2: leer el CSV y devolver la lista de siniestros validados."""
     # TODO 2.8: leer el fichero CSV indicado, cuyas filas tienen las columnas
     #   de ClaimRequest.
+    lista_limpia=[]
+    with open(path, newline="", encoding="utf-8") as f:
+        reader=csv.DictReader(f)
+        for i, fila in enumerate(reader,start=2):
+            try:
+                request=ClaimRequest(**fila)
+                lista_limpia.append(request)
+            except ValidationError as error:
+                raise ValueError (f"Error :{error} en la fila {i}")
+
+    return lista_limpia
 
     # TODO 2.9: validar cada fila con ClaimRequest. Si alguna fila no es valida,
     #   hay que parar con un ValueError cuyo mensaje diga en que LINEA del
     #   fichero esta el problema y cual es (la cabecera es la linea 1).
 
     # TODO 2.10: devolver la lista con todos los siniestros validados.
-    raise NotImplementedError("TODO: ejercicio 2 (read_claims)")
+
 
 
 def main(argv=None):
@@ -50,16 +63,36 @@ def main(argv=None):
     #   eso falla (ValueError), mostrar el error por la salida de errores y
     #   terminar con codigo de salida 2, SIN escribir ningun fichero.
 
+
+
+    try:
+        requests=read_claims(args.input)
+        model=load_model(args.model)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 2
+
+
+
+
     # TODO 4.13: obtener la prediccion de cada siniestro.
+    predicciones = []
+    for reclamacion in requests:
+        prediccion=predict(model, reclamacion)
+        predicciones.append(prediccion)
 
     # TODO 4.14: escribir el CSV de salida (con las columnas de OUTPUT_COLUMNS)
     #   en la ruta --output, creando la carpeta si no existe. Solo se escribe
     #   cuando todo lo anterior ha ido bien: si algo falla, no debe quedar un
     #   fichero a medias.
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+    df = pd.DataFrame([p.model_dump() for p in predicciones])
+    df.to_csv(args.output, index=False, columns=OUTPUT_COLUMNS)
 
     # TODO 4.15: mostrar cuantos siniestros se han predicho y terminar con
     #   codigo de salida 0.
-    raise NotImplementedError("TODO: ejercicio 4 (main)")
+    print(f"Se han predicho {len(predicciones)} siniestros")
+    return 0
 
 
 if __name__ == "__main__":

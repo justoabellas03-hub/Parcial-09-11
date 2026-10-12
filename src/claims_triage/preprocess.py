@@ -28,12 +28,34 @@ def preprocess(request):
     """
     # TODO 3.1 (LIMPIEZA): si la edad del vehiculo no esta informada, el modelo
     #   debe recibir DEFAULT_VEHICLE_AGE en su lugar.
+    vehicle_age_years=request.vehicle_age_years
+    if vehicle_age_years is None:
+        vehicle_age_years=DEFAULT_VEHICLE_AGE
+
 
     # TODO 3.2 (CATEGORIZACION): el modelo no entiende texto, asi que el tipo
     #   de poliza debe convertirse en un codigo numerico (policy_code):
     #       basico -> 0     terceros_ampliado -> 1     todo_riesgo -> 2
+    policy_type=request.policy_type
+    if policy_type == "basico":
+        policy_code=0
+    elif  policy_type == "terceros_ampliado":
+        policy_code=1
+    else:
+        policy_code=2
+    
+    
 
     # TODO 3.3: devolver los valores del siniestro, ya limpios, en el orden
     #   exacto de FEATURE_NAMES. El identificador (claim_id) no es un dato para
     #   el modelo y no debe incluirse.
-    raise NotImplementedError("TODO: ejercicio 3")
+    return [
+        request.driver_age,
+        vehicle_age_years,
+        request.claim_amount_eur,
+        request.injuries,
+        request.police_report,
+        policy_code
+    
+    ]
+

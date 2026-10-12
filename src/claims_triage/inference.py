@@ -20,27 +20,45 @@ def load_model(path):
       "model_version" -> un texto con la version del modelo
     """
     # TODO 4.5: cargar el modelo desde el fichero indicado.
+    model=joblib.load(path)
 
     # TODO 4.6: asegurarse de que el modelo cargado espera exactamente las
     #   mismas columnas y en el mismo orden que usa este codigo (FEATURE_NAMES).
     #   Si no es asi, no debe usarse: avisar con un ValueError y un mensaje claro.
+    feature_names=model["feature_names"]
+    if feature_names != FEATURE_NAMES:
+      raise ValueError("Las columnas introducidas en el modelo no son las esperadas por el mismo")
+
 
     # TODO 4.7: devolver el diccionario del modelo.
-    raise NotImplementedError("TODO: ejercicio 4 (load_model)")
+    return model
 
 
 def predict(model, request):
     """Predice un siniestro (un ClaimRequest) y devuelve un ClaimPrediction."""
     # TODO 4.8: preparar los datos del siniestro para el modelo (ejercicio 3).
+    claim_procesado=preprocess(request)
 
     # TODO 4.9: obtener del modelo la probabilidad de que el siniestro sea de
     #   riesgo. predict_proba devuelve, para cada fila, una probabilidad por
     #   clase en el orden [no riesgo, riesgo].
+    estimador=model["estimator"]
+    prob=estimador.predict_proba([claim_procesado])[0][1]
 
     # TODO 4.10: decidir: "revision_manual" si la probabilidad alcanza el
     #   umbral THRESHOLD, y "tramitacion_normal" si no.
-
+    if prob >= THRESHOLD:
+       dec="revision_manual"
+    else:
+       dec="tramitacion_normal"
     # TODO 4.11: devolver el resultado como ClaimPrediction (ejercicio 4),
     #   con la probabilidad redondeada a 3 decimales. Asi la salida tambien
     #   queda validada.
-    raise NotImplementedError("TODO: ejercicio 4 (predict)")
+    
+    return ClaimPrediction(
+      claim_id=request.claim_id,
+      decision=dec,
+      risk_probability=prob,
+      model_version=model["model_version"]
+
+    )
